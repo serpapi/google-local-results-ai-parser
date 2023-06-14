@@ -20,7 +20,7 @@ jobs:
     - name: Set up Ruby 2.7.2
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 2.7.x
+        ruby-version: 2.7.2
         bundler-cache: true
 
     - name: Publish to GPR
