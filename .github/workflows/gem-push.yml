@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build + Publish
+    name: Build
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,4 +21,4 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: 2.7.2
-        bundler-cache: true
+        bundler-cache: false
