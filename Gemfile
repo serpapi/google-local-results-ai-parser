@@ -4,4 +4,4 @@ source "https://rubygems.org"
 
 gem 'nokolexbor'
 gem 'http'
-gem 'parallel'
+gem 'parallel', '~> 1.20', '>= 1.20.1'
