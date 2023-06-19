@@ -305,7 +305,7 @@ module GoogleLocalResultsAiParser
     # Fixes `Closes 12 AM``
     def description_as_hours_confusion(results, label_order, duplicates)
       description_index = label_order.index("description")
-      hours_index =  label_order.index("hours")
+      hours_index =  label_order.rindex("hours")
 
       # Description may or may not be a duplicate.
       # This is a known error from the model, so it has to be handled in any case.
