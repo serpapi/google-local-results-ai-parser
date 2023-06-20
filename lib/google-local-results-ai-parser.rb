@@ -445,9 +445,9 @@ module GoogleLocalResultsAiParser
       caught_results_indices = results.map.with_index {|result, index| index if known_errors.include?(result[:input])}.compact
       return results, label_order, duplicates if caught_results_indices == []
 
-      not_service_option_duplicate = duplicates.find.with_index do |duplicate, duplicate_index|
+      not_service_option_duplicates = duplicates.select.with_index do |duplicate, duplicate_index|
         caught_results_indices.each do |caught_index|
-          if results[caught_index][:result][0][0]["label"] != "service_options"
+          if duplicate.include?(caught_index) && results[caught_index][:result][0][0]["label"] != "service_options"
             duplicate_index
           end
         end
@@ -468,14 +468,15 @@ module GoogleLocalResultsAiParser
       caught_results_indices.each {|caught_index| label_order[caught_index] = "service_options"}
 
       # Rearranging duplicates
-      not_service_option_duplicate.each do |duplicate_index|
-        duplicate_arr = duplicates.find{|duplicate| duplicate.include?(2)}
-        last_item = duplicate_arr[-1]
-        duplicates[duplicates.index(duplicate_arr)].delete(last_item)
+      not_service_option_duplicates.each do |not_service_option_duplicate|
+        last_item = duplicates[duplicates.index(not_service_option_duplicate)][-1]
+        duplicates[duplicates.index(not_service_option_duplicate)].delete(last_item)
       end
 
-      if (duplicate_arr = duplicates[duplicates.index(not_service_option_duplicate)]) && duplicate_arr.size == 1
-        duplicates.delete(duplicate_arr)
+      not_service_option_duplicates.each do |not_service_option_duplicate|
+        if (duplicate_arr = duplicates[duplicates.index(not_service_option_duplicate)]) && duplicate_arr.size == 1
+          duplicates.delete(duplicate_arr)
+        end
       end
 
       return results, label_order, duplicates
