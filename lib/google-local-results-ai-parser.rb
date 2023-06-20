@@ -94,7 +94,10 @@ module GoogleLocalResultsAiParser
         results, label_order, duplicates = description_as_hours_confusion(results, label_order, duplicates)
         results, label_order, duplicates = description_as_type_confusion(results, label_order, duplicates)
         results, label_order, duplicates = reviews_as_rating_confusion(results, label_order, duplicates)
+        results, label_order, duplicates = reviews_as_price_confusion(results, label_order, duplicates)
         results, label_order, duplicates = button_text_as_hours_confusion(results, label_order, duplicates)
+        results, label_order, duplicates = button_text_as_address_confusion(results, label_order, duplicates)
+        results, label_order, duplicates = button_text_as_service_options_confusion(results, label_order, duplicates)
         
         # General clashes
         line_result = check_if_on_different_lines(results, duplicates, unsplit_text)
@@ -240,6 +243,73 @@ module GoogleLocalResultsAiParser
       return results, label_order, duplicates
     end
 
+    # 104 Ave ... Share
+    # Fixes `Share`
+    def button_text_as_address_confusion(results, label_order, duplicates)
+      known_errors = ["Share"]
+      confusion_condition = results.any? {|result| known_errors.include?(result[:input])}
+      return results, label_order, duplicates unless confusion_condition
+
+      address_duplicate = duplicates.find.with_index do |duplicate, duplicate_index|
+        if results[duplicate[0]][:result][0][0]["label"] == "address"
+          duplicate_index
+        end
+      end
+
+      # Delete the known button text directly
+      results.delete_at(address_duplicate[-1])
+      
+      # Rearranging `label_order`
+      label_order.delete_at(address_duplicate[-1])
+      
+      # Rearranging duplicates
+      last_item = duplicates[duplicates.index(address_duplicate)][-1]
+      duplicates[duplicates.index(address_duplicate)].delete(last_item)
+
+      if (duplicate_arr = duplicates[duplicates.index(address_duplicate)]) && duplicate_arr.size == 1
+        duplicates.delete(duplicate_arr)
+      end
+
+      return results, label_order, duplicates
+    end
+
+    # Order pickup
+    # Fixes `Order pickup`
+    def button_text_as_service_options_confusion(results, label_order, duplicates)
+      known_errors = ["Order pickup"]
+      confusion_condition = results.any? {|result| known_errors.include?(result[:input])}
+      return results, label_order, duplicates unless confusion_condition
+
+      service_options_indexes = results.map {|result| results.index(result) if known_errors.include?(result[:input])}.compact
+
+      service_options_duplicate = duplicates.find.with_index do |duplicate, duplicate_index|
+        if results[duplicate[0]][:result][0][0]["label"] == "service options"
+          duplicate_index
+        end
+      end
+
+      # Delete the known button text directly
+      service_options_indexes.each {|index| results.delete_at(index)}
+      
+      # Rearranging `label_order`
+      service_options_indexes.each {|index| label_order.delete_at(index)}
+      
+      # Rearranging duplicates
+      service_options_indexes.each do |index|
+        duplicates.each_with_index do |duplicate, duplicate_index|
+          if duplicate.include?(index)
+            duplicates[duplicate_index].delete(index)
+          end
+        end
+      end
+
+      if service_options_duplicate && (duplicate_arr = duplicates[duplicates.index(service_options_duplicate)]) && duplicate_arr.size == 1
+        duplicates.delete(duplicate_arr)
+      end
+
+      return results, label_order, duplicates
+    end
+
     # 3.4 .. (1.4K)
     # Fixes `(1.4K)`
     def reviews_as_rating_confusion(results, label_order, duplicates)
@@ -265,6 +335,38 @@ module GoogleLocalResultsAiParser
         duplicates[duplicates.index(rating_duplicate)].delete(last_item)
 
         if (duplicate_arr = duplicates[duplicates.index(rating_duplicate)]) && duplicate_arr.size == 1
+          duplicates.delete(duplicate_arr)
+        end
+      end
+
+      return results, label_order, duplicates
+    end
+
+    # (1.6K) .. $
+    # Fixes `(1.6K)`
+    def reviews_as_price_confusion(results, label_order, duplicates)
+      price_duplicate = duplicates.find.with_index do |duplicate, duplicate_index|
+        if results[duplicate[0]][:result][0][0]["label"] == "price"
+          duplicate_index
+        end
+      end
+
+      if price_duplicate && results[price_duplicate[0]][:input][/\(\d+\.\d+\w\)/]
+        # Zero out the `price`, and put it to last position
+        reviews_hash = results[price_duplicate[-1]][:result][0].find {|hash| hash["label"] == "reviews" }
+        reviews_index = results[price_duplicate[-1]][:result][0].index(reviews_hash)
+        results[price_duplicate[-1]][:result][0][0] = {"label" => "reviews", "score" => 1.0}
+        results[price_duplicate[-1]][:result][0].delete_at(reviews_index)
+        results[price_duplicate[-1]][:result][0] << {"label" => "price", "score" => 0.0}
+        
+        # Rearranging `label_order`
+        label_order[price_duplicate[-1]] = "reviews"
+        
+        # Rearranging duplicates
+        last_item = duplicates[duplicates.index(price_duplicate)][-1]
+        duplicates[duplicates.index(price_duplicate)].delete(last_item)
+
+        if (duplicate_arr = duplicates[duplicates.index(price_duplicate)]) && duplicate_arr.size == 1
           duplicates.delete(duplicate_arr)
         end
       end
