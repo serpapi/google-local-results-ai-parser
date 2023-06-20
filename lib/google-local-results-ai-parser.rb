@@ -355,16 +355,16 @@ module GoogleLocalResultsAiParser
         # Zero out the `price`, and put it to last position
         reviews_hash = results[price_duplicate[-1]][:result][0].find {|hash| hash["label"] == "reviews" }
         reviews_index = results[price_duplicate[-1]][:result][0].index(reviews_hash)
-        results[price_duplicate[-1]][:result][0][0] = {"label" => "reviews", "score" => 1.0}
-        results[price_duplicate[-1]][:result][0].delete_at(reviews_index)
-        results[price_duplicate[-1]][:result][0] << {"label" => "price", "score" => 0.0}
+        results[price_duplicate[0]][:result][0][0] = {"label" => "reviews", "score" => 1.0}
+        results[price_duplicate[0]][:result][0].delete_at(reviews_index)
+        results[price_duplicate[0]][:result][0] << {"label" => "price", "score" => 0.0}
         
         # Rearranging `label_order`
-        label_order[price_duplicate[-1]] = "reviews"
+        label_order[price_duplicate[0]] = "reviews"
         
         # Rearranging duplicates
-        last_item = duplicates[duplicates.index(price_duplicate)][-1]
-        duplicates[duplicates.index(price_duplicate)].delete(last_item)
+        first_item = duplicates[duplicates.index(price_duplicate)][0]
+        duplicates[duplicates.index(price_duplicate)].delete(first_item)
 
         if (duplicate_arr = duplicates[duplicates.index(price_duplicate)]) && duplicate_arr.size == 1
           duplicates.delete(duplicate_arr)
