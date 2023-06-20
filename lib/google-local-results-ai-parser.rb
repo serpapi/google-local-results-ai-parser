@@ -441,7 +441,7 @@ module GoogleLocalResultsAiParser
     # On-site services, Online appointments
     # Fixes `On-site services`, `Online appointments`
     def service_options_as_description_or_type_confusion(results, label_order, duplicates)
-      known_errors = ["On-site services", "On-site services not available", "Online appointments", "Online appointments not available"]
+      known_errors = ["On-site services", "On-site services not available", "Onsite services", "Onsite services not available", "Online appointments", "Online appointments not available"]
       caught_results_indices = results.map.with_index {|result, index| index if known_errors.include?(result[:input])}.compact
       return results, label_order, duplicates if caught_results_indices == []
 
