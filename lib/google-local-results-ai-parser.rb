@@ -90,14 +90,14 @@ module GoogleLocalResultsAiParser
         duplicates = find_duplicates(label_order)
 
         # Known clashes
+        results, label_order, duplicates = button_text_as_hours_confusion(results, label_order, duplicates)
+        results, label_order, duplicates = button_text_as_address_confusion(results, label_order, duplicates)
+        results, label_order, duplicates = button_text_as_service_options_confusion(results, label_order, duplicates)
         results, label_order, duplicates = service_options_as_type_confusion(results, label_order, duplicates)
         results, label_order, duplicates = description_as_hours_confusion(results, label_order, duplicates)
         results, label_order, duplicates = description_as_type_confusion(results, label_order, duplicates)
         results, label_order, duplicates = reviews_as_rating_confusion(results, label_order, duplicates)
         results, label_order, duplicates = reviews_as_price_confusion(results, label_order, duplicates)
-        results, label_order, duplicates = button_text_as_hours_confusion(results, label_order, duplicates)
-        results, label_order, duplicates = button_text_as_address_confusion(results, label_order, duplicates)
-        results, label_order, duplicates = button_text_as_service_options_confusion(results, label_order, duplicates)
         results, label_order, duplicates = service_options_as_description_or_type_confusion(results, label_order, duplicates)
         
         # General clashes
@@ -227,18 +227,30 @@ module GoogleLocalResultsAiParser
         end
       end
 
-      # Delete the known button text directly
-      results.delete_at(hours_duplicate[-1])
-      
-      # Rearranging `label_order`
-      label_order.delete_at(hours_duplicate[-1])
-      
-      # Rearranging duplicates
-      last_item = duplicates[duplicates.index(hours_duplicate)][-1]
-      duplicates[duplicates.index(hours_duplicate)].delete(last_item)
+      if hours_duplicate
+        # Delete the known button text directly
+        results.delete_at(hours_duplicate[-1])
+        
+        # Rearranging `label_order`
+        label_order.delete_at(hours_duplicate[-1])
+        
+        # Rearranging duplicates
+        last_item = duplicates[duplicates.index(hours_duplicate)][-1]
+        duplicates[duplicates.index(hours_duplicate)].delete(last_item)
 
-      if (duplicate_arr = duplicates[duplicates.index(hours_duplicate)]) && duplicate_arr.size == 1
-        duplicates.delete(duplicate_arr)
+        if (duplicate_arr = duplicates[duplicates.index(hours_duplicate)]) && duplicate_arr.size == 1
+          duplicates.delete(duplicate_arr)
+        end
+      else
+        known_error_indices = results.map.with_index {|result, result_index| result_index if known_errors.include?(result[:input])}.compact
+
+        known_error_indices.each do |index|
+          # Delete the known button text directly
+          results.delete_at(index)
+
+          # Rearranging `label_order`
+          label_order.delete_at(index)
+        end
       end
 
       return results, label_order, duplicates
