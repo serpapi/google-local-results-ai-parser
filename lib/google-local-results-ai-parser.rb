@@ -98,6 +98,7 @@ module GoogleLocalResultsAiParser
         results, label_order, duplicates = button_text_as_hours_confusion(results, label_order, duplicates)
         results, label_order, duplicates = button_text_as_address_confusion(results, label_order, duplicates)
         results, label_order, duplicates = button_text_as_service_options_confusion(results, label_order, duplicates)
+        results, label_order, duplicates = service_options_as_description_or_type_confusion(results, label_order, duplicates)
         
         # General clashes
         line_result = check_if_on_different_lines(results, duplicates, unsplit_text)
@@ -432,6 +433,49 @@ module GoogleLocalResultsAiParser
             duplicates.delete(duplicate_arr)
           end
         end
+      end
+
+      return results, label_order, duplicates
+    end
+
+    # On-site services, Online appointments
+    # Fixes `On-site services`, `Online appointments`
+    def service_options_as_description_or_type_confusion(results, label_order, duplicates)
+      known_errors = ["On-site services", "On-site services not available", "Online appointments", "Online appointments not available"]
+      caught_results_indices = results.map.with_index {|result, index| index if known_errors.include?(result[:input])}.compact
+      return results, label_order, duplicates if caught_results_indices == []
+
+      not_service_option_duplicate = duplicates.find.with_index do |duplicate, duplicate_index|
+        caught_results_indices.each do |caught_index|
+          if results[caught_index][:result][0][0]["label"] != "service_options"
+            duplicate_index
+          end
+        end
+      end
+
+      # Zero out the `type` or `description`, and put it to last position
+      caught_results_indices.each do |caught_index|
+        service_options_hash = results[caught_index][:result][0].find {|hash| hash["label"] == "service options" }
+        service_options_index = results[caught_index][:result][0].index(service_options_hash)
+        old_result_hash = results[caught_index][:result][0][0]
+        results[caught_index][:result][0][0] = {"label" => "service options", "score" => 1.0}
+        results[caught_index][:result][0].delete_at(service_options_index)
+        old_result_hash["score"] = 0.0
+        results[caught_index][:result][0] << old_result_hash
+      end
+
+      # Rearranging `label_order`
+      caught_results_indices.each {|caught_index| label_order[caught_index] = "service_options"}
+
+      # Rearranging duplicates
+      not_service_option_duplicate.each do |duplicate_index|
+        duplicate_arr = duplicates.find{|duplicate| duplicate.include?(2)}
+        last_item = duplicate_arr[-1]
+        duplicates[duplicates.index(duplicate_arr)].delete(last_item)
+      end
+
+      if (duplicate_arr = duplicates[duplicates.index(not_service_option_duplicate)]) && duplicate_arr.size == 1
+        duplicates.delete(duplicate_arr)
       end
 
       return results, label_order, duplicates
