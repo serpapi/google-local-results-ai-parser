@@ -63,7 +63,7 @@ module GoogleLocalResultsAiParser
 
         if final_results[label]
           # Combine the text for same elements
-          final_results[label] = unsplit_text[/#{final_results[label]}[.|\n]+#{value}/]
+          final_results[label] = unsplit_text[/#{final_results[label]}(.+|\n)#{value}/]
         else
           # Directly assign values
           final_results[label] = value
