@@ -2,6 +2,7 @@ require 'nokolexbor'
 require 'http'
 require 'parallel'
 require 'json'
+require 'pry'
 
 module GoogleLocalResultsAiParser
   DEFAULT_SERVER = 'https://api-inference.huggingface.co/models/serpapi/bert-base-local-results'.freeze
@@ -465,16 +466,17 @@ module GoogleLocalResultsAiParser
         "Takeaway"
       ]
       caught_results_indices = results.map.with_index {|result, index| index if known_errors.include?(result[:input])}.compact
-      return results, label_order, duplicates if caught_results_indices == []
 
-      not_service_option_duplicates = duplicates.select.with_index do |duplicate, duplicate_index|
-        caught_results_indices.each do |caught_index|
+      not_service_option_duplicates = []
+      caught_results_indices.each do |caught_index|
+        duplicates.each.with_index do |duplicate, duplicate_index|
           if duplicate.include?(caught_index) && results[caught_index][:result][0][0]["label"] != "service_options"
-            duplicate_index
+            not_service_option_duplicates << duplicate_index
           end
         end
       end
 
+      return results, label_order, duplicates if not_service_option_duplicates == []
       # Zero out the `type` or `description`, and put it to last position
       caught_results_indices.each do |caught_index|
         service_options_hash = results[caught_index][:result][0].find {|hash| hash["label"] == "service options" }
@@ -491,12 +493,12 @@ module GoogleLocalResultsAiParser
 
       # Rearranging duplicates
       not_service_option_duplicates.each do |not_service_option_duplicate|
-        last_item = duplicates[duplicates.index(not_service_option_duplicate)][-1]
-        duplicates[duplicates.index(not_service_option_duplicate)].delete(last_item)
+        last_item = duplicates[not_service_option_duplicate][-1]
+        duplicates[not_service_option_duplicate].delete(last_item)
       end
 
       not_service_option_duplicates.each do |not_service_option_duplicate|
-        if (duplicate_arr = duplicates[duplicates.index(not_service_option_duplicate)]) && duplicate_arr.size == 1
+        if (duplicate_arr = duplicates[not_service_option_duplicate]) && duplicate_arr.size == 1
           duplicates.delete(duplicate_arr)
         end
       end
