@@ -1,5 +1,6 @@
 <h1 align="center">Google Local Results AI Parser</h1>
 
+
 <div align="center">
 
   <a href="">[![Gem Version][gem-shield]][gem-url]</a>
@@ -11,6 +12,10 @@
   <a href="">[![MIT License][license-shield]][license-url]</a>
 
 </div>
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/73674035/247616767-eedea038-a084-43a7-a108-eb8120039334.png" alt="AI-Powered Parser" width="50%"/>
+</p>
 
 `google-local-results-ai-parser` is a gem developed by [SerpApi](https://serpapi.com/). It provides a parser for extracting structured data from Google Local Search Results using the [`serpapi/bert-base-local-results` transformer model](https://huggingface.co/serpapi/bert-base-local-results), enabling you to parse HTML content of Google Local Results Listings in English, extract relevant information, and classify it into different categories such as ratings, reviews, descriptions, and more.
 
