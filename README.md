@@ -21,6 +21,7 @@
 
 <div align="center"><b>Relevant Sources</b></div>
 
+- [**Real World Example of AI Powered Parsing**](https://serpapi.com/blog/real-world-example-of-ai-powered-parsing/): A Blog Post Explaining How Everything Works.
 - [**Google Local Results AI Server**](https://github.com/serpapi/google-local-results-ai-server): Open-Source server code for mimicking Huggingface Inference API.
 - [**BERT-Based Classification Model for Google Local Listings**](https://huggingface.co/serpapi/bert-base-local-results): BERT-based classification model developed using the Hugging Face library, and a dataset gathered by SerpApi's Google Local API.
 - [**SerpApi's Google Local Pack Results API Documentation**](https://serpapi.com/local-pack): A documentation on SerpApi's Scraper API for inline Google Local Results in Google queries. The keys served in this gem are in coherence with SerpApi's scrapers.
