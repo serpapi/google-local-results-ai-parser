@@ -49,10 +49,6 @@ $ gem install google-local-results-ai-parser
 To use the `google-local-results-ai-parser` gem, you need to include the necessary dependencies:
 ```rb
 require 'google-local-results-ai-parser'
-require 'nokolexbor'
-require 'http'
-require 'parallel'
-require 'json'
 ```
 
 <h3 align="center">Parsing HTML</h3>
@@ -133,6 +129,9 @@ The gem provides some configuration options that you can customize according to 
     - **Known clashes**: Sometimes the model serves clashing results for one label. This may happen due to limitations of the model, the generality of meaning of the classified text, or the limitations of the dataset model was trained on. The gem can clear out the majority of the known clashes, and correct them using traditional logical algorithms.
     - **General clashes**: The model can compare the assurance score of two texts with same label, and pick the one with a higher score to automatically correct the results after predictions. From raw observations, doing after-corrections only once is observed to be enough. You may increase `iteration` parameter to force the after-corrections more in case of any further clashes.
 
+- `debug`: The parameter allows the returning of debugging time information needed to calculate maximum time it takes to connect to the server. You may take a look at [example_debug.rb](https://github.com/serpapi/google-local-results-ai-parser/blob/master/example_debug.rb) and [example_multiple_debug.rb](https://github.com/serpapi/google-local-results-ai-parser/blob/master/example_debug.rb) for reference.
+
+- `no_cache`: The parameter forces the model endpoint to make a prediciton instead of serving cached results. This is also used for debugging purposes to see the initial load of the model. You may take a look at [example_debug.rb](https://github.com/serpapi/google-local-results-ai-parser/blob/master/example_debug.rb) and [example_multiple_debug.rb](https://github.com/serpapi/google-local-results-ai-parser/blob/master/example_multiple_debug.rb) for reference.
 
 [gem-shield]: https://img.shields.io/gem/v/google-local-results-ai-parser.svg
 [gem-url]: https://rubygems.org/gems/google-local-results-ai-parser

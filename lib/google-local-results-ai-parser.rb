@@ -2,7 +2,6 @@ require 'nokolexbor'
 require 'http'
 require 'parallel'
 require 'json'
-require 'pry'
 
 module GoogleLocalResultsAiParser
   DEFAULT_SERVER = 'https://api-inference.huggingface.co/models/serpapi/bert-base-local-results'.freeze
@@ -25,13 +24,13 @@ module GoogleLocalResultsAiParser
   end
 
   class << self
-    def parse_multiple(html_parts: nil, bearer_token: nil, server: DEFAULT_SERVER, separator_regex: DEFAULT_SEPARATOR_REGEX, rejected_css: DEFAULT_REJECTED_CSS, broken_css: DEFAULT_BROKEN_CSS, iteration: DEFAULT_MAX_ITERATION)
+    def parse_multiple(html_parts: nil, bearer_token: nil, server: DEFAULT_SERVER, separator_regex: DEFAULT_SEPARATOR_REGEX, rejected_css: DEFAULT_REJECTED_CSS, broken_css: DEFAULT_BROKEN_CSS, iteration: DEFAULT_MAX_ITERATION, debug: false, no_cache: false)
       response_bodies = Parallel.map(html_parts, in_threads: html_parts.size) do |html|
-        parse(html: html, bearer_token: bearer_token, server: server, separator_regex: separator_regex, rejected_css: rejected_css, broken_css: DEFAULT_BROKEN_CSS, iteration: DEFAULT_MAX_ITERATION)
+        parse(html: html, bearer_token: bearer_token, server: server, separator_regex: separator_regex, rejected_css: rejected_css, broken_css: broken_css, iteration: iteration, debug: debug, no_cache: no_cache)
       end
     end
 
-    def parse(html: nil, bearer_token: nil, server: DEFAULT_SERVER, separator_regex: DEFAULT_SEPARATOR_REGEX, rejected_css: DEFAULT_REJECTED_CSS, broken_css: DEFAULT_BROKEN_CSS, iteration: DEFAULT_MAX_ITERATION)
+    def parse(html: nil, bearer_token: nil, server: DEFAULT_SERVER, separator_regex: DEFAULT_SEPARATOR_REGEX, rejected_css: DEFAULT_REJECTED_CSS, broken_css: DEFAULT_BROKEN_CSS, iteration: DEFAULT_MAX_ITERATION, debug: false, no_cache: false)
       doc = Nokolexbor::HTML(html)
 
       # Rejecting title, buttons, and label
@@ -47,12 +46,20 @@ module GoogleLocalResultsAiParser
       cleaned_text = split_text.map(&:strip).reject(&:empty?).flatten
     
       # Making parallel requests to server for classification
-      results = parallel_post_requests(server, bearer_token, cleaned_text)
+      time_start = Time.now
+      results = parallel_post_requests(server, bearer_token, cleaned_text, no_cache)
+      time_end = Time.now
       
       # After-fix and sorting of results
       results = sort_results(results, extracted_text, unsplit_text, iteration, doc)
       final_results = transform_hash(results, unsplit_text)
-      final_results
+
+      unless debug
+        final_results # Default output
+      else
+        time_taken = time_end - time_start # Time taken to make requests for debugging purpurses
+        return final_results, time_taken
+      end
     end
 
     def transform_hash(results, unsplit_text)
@@ -75,6 +82,17 @@ module GoogleLocalResultsAiParser
     end
 
     def sort_results(results, extracted_text, unsplit_text, iteration, doc)
+      # Some endpoints load array of hashes whereas some of them
+      # load a wrapped version of this. The Free Inference API
+      # should be taken as reference since most people will
+      # prototype there.
+      results.map! do |item|
+        if item[:result][0].is_a?(Hash)
+          item[:result] = [item[:result]]
+        end
+        item
+      end
+
       # Make at most 2 iterations for after-corrections
       (0..iteration).each do |i|
         begin
@@ -540,18 +558,23 @@ module GoogleLocalResultsAiParser
 
     private
 
-    def parallel_post_requests(server, bearer_token, inputs)
+    def parallel_post_requests(server, bearer_token, inputs, no_cache)
       response_bodies = Parallel.map(inputs, in_threads: inputs.size) do |input|
-        post_request(server, bearer_token, input)
+        post_request(server, bearer_token, input, no_cache)
       end
 
       response_bodies
     end
 
-    def post_request(server, bearer_token, input)
+    def post_request(server, bearer_token, input, no_cache)
       url = URI.parse(server)
-      headers = { 'Authorization' => "Bearer #{bearer_token}", 'Content-Type' => 'application/json' }
-      body = { inputs: input }.to_json
+      headers = unless no_cache
+        { 'Authorization' => "Bearer #{bearer_token}", 'Content-Type' => 'application/json' }
+      else
+        { 'Authorization' => "Bearer #{bearer_token}", 'Content-Type' => 'application/json', 'Cache-Control' => 'no-cache' } # To benchmark initial load of the model
+      end
+
+      body = { inputs: input, parameters: {top_k: 11}}.to_json # 11 represents the number of labels the model has
     
       response = HTTP.headers(headers).post(url, body: body)
       response_body = JSON.parse(response.body)

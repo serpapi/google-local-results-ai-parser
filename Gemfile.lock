@@ -1,3 +1,12 @@
+PATH
+  remote: .
+  specs:
+    google-local-results-ai-parser (0.2.4)
+      http
+      json
+      nokolexbor
+      parallel (~> 1.20, >= 1.20.1)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -17,6 +26,7 @@ GEM
     http-cookie (1.0.5)
       domain_name (~> 0.5)
     http-form_data (2.3.0)
+    json (2.6.3)
     llhttp-ffi (0.4.0)
       ffi-compiler (~> 1.0)
       rake (~> 13.0)
@@ -32,9 +42,11 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  google-local-results-ai-parser!
   http
+  json
   nokolexbor
-  parallel
+  parallel (~> 1.20, >= 1.20.1)
 
 BUNDLED WITH
    2.4.7
