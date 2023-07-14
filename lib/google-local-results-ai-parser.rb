@@ -483,18 +483,17 @@ module GoogleLocalResultsAiParser
         "Online estimates not available",
         "Takeaway"
       ]
-      caught_results_indices = results.map.with_index {|result, index| index if known_errors.include?(result[:input])}.compact
+      caught_results_indices = results.map.with_index {|result, index| index if known_errors.include?(result[:input]) && result[:result][0][0]["label"] != "service options"}.compact
 
       not_service_option_duplicates = []
       caught_results_indices.each do |caught_index|
         duplicates.each.with_index do |duplicate, duplicate_index|
-          if duplicate.include?(caught_index) && results[caught_index][:result][0][0]["label"] != "service_options"
+          if duplicate.include?(caught_index)
             not_service_option_duplicates << duplicate_index
           end
         end
       end
 
-      return results, label_order, duplicates if not_service_option_duplicates == []
       # Zero out the `type` or `description`, and put it to last position
       caught_results_indices.each do |caught_index|
         service_options_hash = results[caught_index][:result][0].find {|hash| hash["label"] == "service options" }
@@ -505,10 +504,11 @@ module GoogleLocalResultsAiParser
         old_result_hash["score"] = 0.0
         results[caught_index][:result][0] << old_result_hash
       end
-
+      
       # Rearranging `label_order`
-      caught_results_indices.each {|caught_index| label_order[caught_index] = "service_options"}
+      caught_results_indices.each {|caught_index| label_order[caught_index] = "service options"}
 
+      return results, label_order, duplicates if not_service_option_duplicates == []
       # Rearranging duplicates
       not_service_option_duplicates.each do |not_service_option_duplicate|
         last_item = duplicates[not_service_option_duplicate][-1]
