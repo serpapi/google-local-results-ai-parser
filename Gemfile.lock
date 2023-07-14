@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    google-local-results-ai-parser (0.2.4)
+    google-local-results-ai-parser (0.2.6)
       http
       json
       nokolexbor
